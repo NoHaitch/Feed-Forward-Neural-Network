@@ -1,13 +1,16 @@
-import math
+# Reference: https://github.com/karpathy/micrograd
+from func.activations import linier, relu, sigmoid, tanh, softmax, exp, log
 
 class Value:
     """ Class to represent a value in a mathematical expression. Used for automatic differentiation.
 
-        Args:
+        Attributes:
             data (_type_): Numerical value of node. 
-            _children (tuple, optional): Children nodes.
-            _op (str, optional): Operation performed to get this value.
-            label (str, optional): Label for the node. Used to vizualize the graph.
+            grad (float): Gradient of the value.
+            _backward (function): Function to compute the gradient. This will contain the chain rule for derivatives.
+            _prev (set): Children nodes.
+            _op (str): Operation performed to get this value.
+            label (str): Label for the node. Used to vizualize the graph.
     """
 
     def __init__(self, data, _children=(), _op="", label=""):
@@ -21,6 +24,7 @@ class Value:
     def __repr__(self):
         """ String representation of the object. """
         return f"Value data={self.data} grad={self.grad} op={self._op} label={self.label}"
+
 
     ### ===== Base operations ===== ###
     def __add__(self, other):
@@ -58,6 +62,7 @@ class Value:
 
         return out
 
+
     ### ===== Other operations ===== ###
     def __neg__(self): # -self
         return self * -1
@@ -80,30 +85,8 @@ class Value:
     def __rtruediv__(self, other): # other / self
         return other * self**-1
 
-    ### ===== Complex functions ===== ###
-    def exp(self):
-        """ Exponential function. """
-        x = self.data
-        out = Value(math.exp(x), (self, ), 'exp')
-        
-        def _backward():
-            self.grad += out.data * out.grad 
-            out._backward = _backward
-        
-        return out
 
-    def tanh(self):
-        """ Hyperbolic tangent function. """
-        x = self.data
-        t = (math.exp(2*x) - 1)/(math.exp(2*x) + 1)
-        out = Value(t, (self, ), 'tanh')
-
-        def _backward():
-            self.grad += (1 - t**2) * out.grad
-        out._backward = _backward
-
-        return out
-
+    ### ===== Main functions ===== ###
     def backward(self):
         """ Backpropagate the gradient through the graph. Using Chain Rule to compute the gradient of the value."""
         
@@ -126,3 +109,36 @@ class Value:
         # backpropagate the gradient through the graph using chain rule
         for v in reversed(topo):
             v._backward()
+
+
+    ### ===== Activation functions, called from func/activation.py ===== ###
+    def linier(self):
+        """ Linear activation function. """
+        return linier(self)
+    
+    def relu(self):
+        """ Rectified Linear Unit activation function. """
+        return relu(self)
+    
+    def sigmoid(self):
+        """ Sigmoid activation function. """
+        return sigmoid(self)
+
+    def tanh(self):
+        """ Hyperbolic tangent activation function. """
+        return tanh(self)
+    
+    def softmax(self):
+        """ Softmax activation function. """
+        return softmax(self)
+    
+    def exp(self):
+        """ Exponential activation function. """
+        return exp(self)
+    
+    def log(self):
+        """ Logarithmic activation function. """
+        return log(self)
+    
+
+    

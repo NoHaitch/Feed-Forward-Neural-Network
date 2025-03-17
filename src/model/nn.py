@@ -17,33 +17,44 @@ class Module:
 
 
 class Neuron(Module):
-    """ Reperesent a Neuron in a neural network.
+    """ Represents a Neuron in a Neural Network.
 
-    Attributes:
-        w (list): Weights of the neuron.
-        b (Value): Bias of the neuron.
+        Attributes:
+            w (list[Value]): Weights of the neuron.
+            b (Value): Bias of the neuron.
+            active_func (callable[[Value], Value]): Activation function used.
     """
 
-    def __init__(self, nin, weights=None, bias=0, nonlin=True):
+    def __init__( self, nin: int, weights: list = None, bias: int | float = 0.0, same_weight: int | float = 0,  active_func: callable[[Value], Value] = lambda x: x.relu()):
         """
         Args:
             nin (int): Number of inputs to the neuron.
-            nonlin (bool): Whether the neuron is linear or not.
+            weights (list, optional): Predefined weights. If None, random values are used.
+            bias (int | float, optional): Bias of the neuron.
+            same_weight (int | float, optional): If True, all inputs use the same weight.
+            active_func (callable[[Value], Value], optional): Activation function.
         """
-        self.w: list[Value] = Converter.to_Values(weights)
         self.b: Value = Converter.to_Value(bias)
-        self.nonlin = nonlin
+        self.active_func = active_func
 
-    def __call__(self, x):
+        if weights is not None:
+            self.w = weights
+        elif same_weight != 0:
+            self.w = [Converter.to_Value(same_weight) for _ in nin]
+        else:
+            self.w = [Converter.to_Value(random.uniform(-1, 1)) for _ in range(nin)]
+
+    def __call__(self, x: list[Value]) -> Value:
         """ Forward pass of the neuron. """
         act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
-        return act.relu() if self.nonlin else act
+        return self.active_func(act)
 
-    def parameters(self):
+    def parameters(self) -> list[Value]:
+        """ Returns all trainable parameters of the neuron. """
         return self.w + [self.b]
 
-    def __repr__(self):
-        return f"{'ReLU' if self.nonlin else 'Linear'}Neuron({len(self.w)})"
+    def __repr__(self) -> str:
+        return f"Neuron({len(self.w)}, activation={self.active_func.__name__})"
 
 
 class Layer(Module):

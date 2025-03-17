@@ -1,6 +1,6 @@
 # Reference: https://github.com/karpathy/micrograd
 from .value import Value
-import random
+from src.utils.converter import Converter
 
 
 class Module:
@@ -15,6 +15,7 @@ class Module:
         """ Return all the parameters of the Neural Network. """
         return []
 
+
 class Neuron(Module):
     """ Reperesent a Neuron in a neural network.
 
@@ -23,14 +24,14 @@ class Neuron(Module):
         b (Value): Bias of the neuron.
     """
 
-    def __init__(self, nin, nonlin=True):
+    def __init__(self, nin, weights=None, bias=0, nonlin=True):
         """
         Args:
             nin (int): Number of inputs to the neuron.
             nonlin (bool): Whether the neuron is linear or not.
         """
-        self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
-        self.b = Value(0)
+        self.w: list[Value] = Converter.to_Values(weights)
+        self.b: Value = Converter.to_Value(bias)
         self.nonlin = nonlin
 
     def __call__(self, x):

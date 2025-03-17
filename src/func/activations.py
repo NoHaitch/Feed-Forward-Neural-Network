@@ -14,7 +14,6 @@ Implemented:
 
 def linier(val):
     """ Linear activation function. Linear(x) = x """
-
     return val
 
 
@@ -104,6 +103,7 @@ def exp(val):
     out._backward = _backward
 
     return out
+
 
 def log(val):
     """ Logarithmic activation function. log(x) = ln(x) """

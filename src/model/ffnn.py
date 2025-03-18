@@ -39,7 +39,7 @@ class FFNN:
 
 
         self.X = Matrix(X)                              # Input data / Data Layer (batch ~ in form of a matrix)
-        self.y = y                                      # Target output
+        self.y = Matrix([[int(val)] for val in y])      # Target output
         self.loss = self.__getLossFunction(loss)        # Loss function
         
         nin = self.X.cols
@@ -55,7 +55,7 @@ class FFNN:
         self.NN = MLP(nin, nout, active_funcs, weight)                                
 
     def __repr__(self):
-        return f"Fully Connected Feed Forward Neural Network\n> X = {self.X.rows} x {self.X.cols}\n> y = 1 x {len(self.y)}\n> {self.NN}"
+        return f"Fully Connected Feed Forward Neural Network\n> X = {self.X.rows} x {self.X.cols}\n> y = {self.X.rows} x {self.X.cols}\n> {self.NN}"
 
     def __getLossFunction(self, loss: str) -> callable:
         """ Get the corresponding loss function from the string. """

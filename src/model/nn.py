@@ -40,8 +40,8 @@ class Neuron(Module):
         # Weight Initialization
         if mode == "zero":
             # Zero Initialization
-            self.w = [Value(0) for _ in range(nin)]
-            self.b = Value(0)
+            self.w = [Value(0, label="w") for _ in range(nin)]
+            self.b = Value(0, label="b")
             
         elif mode == "uniform":
             # TODO: Random Uniform Distribution with lower bound, upper bound, and seed

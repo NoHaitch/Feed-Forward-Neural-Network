@@ -1,4 +1,5 @@
-from .value import Value
+import numpy as np
+from src.model.value import Value
 from src.utils.converter import Converter
 
 
@@ -12,11 +13,22 @@ class Matrix:
     """
 
     def __init__(self, data):
-        assert len(data) or len(data[0]) > 0, "Empty Matrix"
+        assert data is not None, "Matrix cannot be initialized with None."
 
-        self.data = [[Converter.to_Value(vals) for vals in row] for row in data]
-        self.rows = len(data)
-        self.cols = len(data[0])
+        if isinstance(data, np.ndarray):
+            data = data.tolist() 
+
+        assert isinstance(data, list) and len(data) > 0, "Matrix must be initialized with a non-empty list or numpy array."
+
+        if isinstance(data[0], (int, float, Value)):  
+            data = [data]  
+
+        self.data = [[Converter.to_Value(val) for val in row] for row in data]
+        self.rows = len(self.data)
+        self.cols = len(self.data[0])
+
+        assert isinstance(self.data[0][0], Value), f"Wrong Type. {type(self.data[0][0])}"
+
 
     def __repr__(self) -> str:
         """ String representation of the matrix. Displays shape and 5 sample rows. """
@@ -34,8 +46,18 @@ class Matrix:
         assert self.cols == other.rows, f"Matrix dimensions do not match for multiplication. {self.cols} != {other.rows}"
 
         result_data = [
-            [sum(self.data[i][k] * other.data[k][j] for k in range(self.cols)) for j in range(other.cols)]
+            [
+                sum(self.data[i][k] * other.data[k][j] for k in range(self.cols)) 
+                for j in range(other.cols)
+            ]
             for i in range(self.rows)
         ]
 
         return Matrix(result_data)
+
+    def add_scalar(self, scalar) -> 'Matrix':
+        """ Adds a scalar Value to each element in the matrix. """
+
+        new_data = [[val + scalar for val in row] for row in self.data]
+
+        return Matrix(new_data)

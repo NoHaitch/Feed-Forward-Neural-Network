@@ -1,5 +1,4 @@
 # Reference: https://github.com/karpathy/micrograd
-from func.activations import linier, relu, sigmoid, tanh, softmax, exp, log
 
 class Value:
     """ Class to represent a value in a mathematical expression. Used for automatic differentiation.
@@ -14,6 +13,8 @@ class Value:
     """
 
     def __init__(self, data, _children=(), _op="", label=""):
+        assert isinstance(data, (int, float)), "Value data must be int or float."
+
         self.data = data                # the value    
         self.grad = 0.0                 # the gradient of the value
         self._backward = lambda: None   # the function to compute the gradient. This will contain the chain rule for derivatives.
@@ -41,6 +42,7 @@ class Value:
  
     def __mul__(self, other):
         """ Multiply two values. """
+
         other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data * other.data, (self, other), '*')
 
@@ -109,36 +111,4 @@ class Value:
         # backpropagate the gradient through the graph using chain rule
         for v in reversed(topo):
             v._backward()
-
-
-    ### ===== Activation functions, called from func/activation.py ===== ###
-    def linier(self):
-        """ Linear activation function. """
-        return linier(self)
-    
-    def relu(self):
-        """ Rectified Linear Unit activation function. """
-        return relu(self)
-    
-    def sigmoid(self):
-        """ Sigmoid activation function. """
-        return sigmoid(self)
-
-    def tanh(self):
-        """ Hyperbolic tangent activation function. """
-        return tanh(self)
-    
-    def softmax(self):
-        """ Softmax activation function. """
-        return softmax(self)
-    
-    def exp(self):
-        """ Exponential activation function. """
-        return exp(self)
-    
-    def log(self):
-        """ Logarithmic activation function. """
-        return log(self)
-    
-
-    
+            

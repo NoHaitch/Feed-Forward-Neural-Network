@@ -1,121 +1,146 @@
 import math
-
-""" Activation functions for neural networks. + for math expresion
-Implemented: 
-    - Linear 
-    - ReLU
-    - Sigmoid
-    - Tanh
-    - Softmax
-    - Exponential
-    - Logarithmic
-"""
+from src.model.value import Value
+from src.model.matrix import Matrix
 
 
-def linier(val):
-    """ Linear activation function. Linear(x) = x """
-    return val
+class ActiveFunction:
+    """ Activation Functions for Neural Networks. Supports Matrix input. """
 
+    @staticmethod
+    def linier(X: Matrix) -> Matrix:
+        """ Linear activation function. Linear(X) = X """
+        out_data = [[Value(val.data, (val,), "linier") for val in row] for row in X.data]
 
-def relu(val):
-    """ ReLU activation function. ReLu(x) = max(0, x) """
-    from src.model.value import Value
+        def _backward():
+            for i, row in enumerate(X.data):
+                for j, val in enumerate(row):
+                    val.grad += out_data[i][j].grad  
 
-    out = Value(0 if val.data < 0 else val.data, (val,), "ReLU")
+        for row in out_data:
+            for val in row:
+                val._backward = _backward  
 
-    def _backward():
-        # Derivative of ReLU = 1 if x > 0 else 0
-        val.grad += (out.data > 0) * out.grad
+        return Matrix(out_data)
 
-    out._backward = _backward
+    @staticmethod
+    def relu(X: Matrix) -> Matrix:
+        """ ReLU activation function. ReLU(X) = max(0, X) """
+        out_data = []
+        for row in X.data:
+            out_data.append([
+                Value(0 if val.data < 0 else val.data, (val,), "ReLU") for val in row
+            ])
 
-    return out
+        def _backward():
+            for i, row in enumerate(X.data):
+                for j, val in enumerate(row):
+                    # Derivative of ReLU = 1 if x > 0 else 0
+                    val.grad += (out_data[i][j].data > 0) * out_data[i][j].grad
 
+        for row in out_data:
+            for val in row:
+                val._backward = _backward
 
-def sigmoid(val):
-    """ Sigmoid activation function. Sigmoid(x) = 1 / (1 + exp(-x)) """
-    from src.model.value import Value
+        return Matrix(out_data)
 
-    x = val.data
-    sigmoid = 1 / (1 + math.exp(-x))
-    out = Value(sigmoid, (val,), "sigmoid")
+    @staticmethod
+    def sigmoid(X: Matrix) -> Matrix:
+        """ Sigmoid activation function. Sigmoid(X) = 1 / (1 + exp(-X)) """
+        out_data = []
+        for row in X.data:
+            out_data.append([
+                Value(1 / (1 + math.exp(-val.data)), (val,), "sigmoid") for val in row
+            ])
 
-    def _backward():
-        # Derivative of sigmoid = sigmoid * (1 - sigmoid)
-        val.grad += (sigmoid * (1 - sigmoid)) * out.grad
+        def _backward():
+            for i, row in enumerate(X.data):
+                for j, val in enumerate(row):
+                    sigmoid_val = out_data[i][j].data
+                    # Derivative of sigmoid = sigmoid * (1 - sigmoid)
+                    val.grad += (sigmoid_val * (1 - sigmoid_val)) * out_data[i][j].grad
 
-    out._backward = _backward
+        for row in out_data:
+            for val in row:
+                val._backward = _backward
 
-    return out
+        return Matrix(out_data)
 
+    @staticmethod
+    def tanh(X: Matrix) -> Matrix:
+        """ Hyperbolic tangent activation function. tanh(X) = (exp(2X) - 1) / (exp(2X) + 1) """
+        out_data = []
+        for row in X.data:
+            out_data.append([
+                Value((math.exp(2 * val.data) - 1) / (math.exp(2 * val.data) + 1), (val,), "tanh") for val in row
+            ])
 
-def tanh(val):
-    """ Hyperbolic tangent activation function. tanh(x) = (exp(2x) - 1) / (exp(2x) + 1) """
-    from src.model.value import Value
+        def _backward():
+            for i, row in enumerate(X.data):
+                for j, val in enumerate(row):
+                    # Derivative of tanh = (2 / (exp(x) - exp(-x)) )^2
+                    val.grad += (1 - out_data[i][j].data ** 2) * out_data[i][j].grad
 
-    x = val.data
-    t = (math.exp(2 * x) - 1) / (math.exp(2 * x) + 1)
-    out = Value(t, (val,), "tanh")
+        for row in out_data:
+            for val in row:
+                val._backward = _backward
 
-    def _backward():
-        # based on the reference: https://github.com/karpathy/micrograd
-        # Derivative of tanh = 1 - tanh^2
-        # val.grad += (1 - t**2) * out.grad
+        return Matrix(out_data)
 
-        # based on spesification
-        # Derivative of tanh = (2 / (exp(x) - exp(-x)) )^2
-        val.grad += (2 / (math.exp(x) - math.exp(-x))) ** 2 * out.grad
+    @staticmethod
+    def softmax(X: Matrix) -> Matrix:
+        """ Softmax activation function. For a matrix X, softmax is applied row-wise. """
+        out_data = []
+        for row in X.data:
+            exp_vals = [math.exp(val.data) for val in row]
+            sum_exp = sum(exp_vals)
+            softmax_vals = [Value(exp_vals[i] / sum_exp, (row[i],), "softmax") for i in range(len(row))]
+            out_data.append(softmax_vals)
 
-    out._backward = _backward
+        def _backward():
+            for i, row in enumerate(X.data):
+                for j, val in enumerate(row):
+                    softmax_val = out_data[i][j].data
+                     # Derivative of softmax = softmax * (1 - softmax)
+                    val.grad += (softmax_val * (1 - softmax_val)) * out_data[i][j].grad
 
-    return out
+        for row in out_data:
+            for val in row:
+                val._backward = _backward
 
+        return Matrix(out_data)
 
-def softmax(val):
-    """ Softmax activation function. for vector x, softmax(x)i = exp(xi) / sigma j=1 to n (exp(xj)) """
-    from src.model.value import Value
+    @staticmethod
+    def exp(X: Matrix) -> Matrix:
+        """ Exponential activation function. exp(X) = e^X """
+        out_data = []
+        for row in X.data:
+            out_data.append([Value(math.exp(val.data), (val,), "exp") for val in row])
 
-    x = val.data
-    # Calculate the softmax of a vector x
-    exps = [math.exp(i) for i in x]
-    out = Value(exps / sum(exps), (val,), "softmax")
+        def _backward():
+            for i, row in enumerate(X.data):
+                for j, val in enumerate(row):
+                    val.grad += out_data[i][j].data * out_data[i][j].grad
 
-    def _backward():
-        # Derivative of softmax = softmax * (1 - softmax)
-        val.grad += (out.data * (1 - out.data)) * out.grad
+        for row in out_data:
+            for val in row:
+                val._backward = _backward
 
-    out._backward = _backward
+        return Matrix(out_data)
 
-    return out
+    @staticmethod
+    def log(X: Matrix) -> Matrix:
+        """ Logarithmic activation function. log(X) = ln(X) """
+        out_data = []
+        for row in X.data:
+            out_data.append([Value(math.log(val.data), (val,), "log") for val in row])
 
+        def _backward():
+            for i, row in enumerate(X.data):
+                for j, val in enumerate(row):
+                    val.grad += (1 / val.data) * out_data[i][j].grad
 
-def exp(val):
-    """ Exponential activation function. exp(x) = e^x """
-    from src.model.value import Value
+        for row in out_data:
+            for val in row:
+                val._backward = _backward
 
-    x = val.data
-    out = Value(math.exp(x), (val,), "exp")
-
-    def _backward():
-        # Derivative of exp = exp
-        val.grad += out.data * out.grad
-
-    out._backward = _backward
-
-    return out
-
-
-def log(val):
-    """ Logarithmic activation function. log(x) = ln(x) """
-    from src.model.value import Value
-
-    x = val.data
-    out = Value(math.log(x), (val,), "log")
-
-    def _backward():
-        # Derivative of log = 1/x
-        val.grad += (1/x) * out.grad
-
-    out._backward = _backward
-
-    return out
+        return Matrix(out_data)

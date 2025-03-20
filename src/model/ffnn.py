@@ -68,5 +68,12 @@ class FFNN:
         
         return loss_functions[loss]
     
-    def train():
-        pass
+    def forward(self):
+        """ Forward Pass of the neural network using loss function. """
+        return self.loss(self.y, self.NN(self.X))
+    
+    def parameters(self):
+        return self.NN.parameters()
+
+    def zero_grad(self):
+        self.NN.zero_grad()

@@ -39,3 +39,36 @@ def draw_dot(root):
         dot.edge(str(id(n1)), str(id(n2)) + n2._op)
 
     return dot
+
+def draw_ffnn(ffnn):
+    """ Draws the FFNN as a feedforward neural network, including the input layer."""
+    dot = Digraph(format="svg", graph_attr={"rankdir": "LR", "nodesep": "1.5"})  # Increase node spacing
+    
+    # Input Layer
+    input_layer_size = ffnn.X.cols
+    with dot.subgraph() as sub:
+        sub.attr(rank="same")
+        for i in range(input_layer_size):
+            node_name = f"Input{i}"
+            sub.node(node_name, label=f"Input {i}", shape="circle", width="0.6")  # Adjust width
+    
+    # Hidden and Output Layers
+    for layer_idx, layer in enumerate(ffnn.NN.layers):
+        with dot.subgraph() as sub:
+            sub.attr(rank="same")  # Ensure neurons in a layer are aligned horizontally
+            for neuron_idx, neuron in enumerate(layer.neurons):
+                node_name = f"L{layer_idx}N{neuron_idx}"
+                sub.node(node_name, label=f"Neuron {neuron_idx}\n{neuron.active_func.__name__}", shape="circle", width="0.7")
+                
+                # Connect input layer to first hidden layer
+                if layer_idx == 0:
+                    for i in range(input_layer_size):
+                        input_node = f"Input{i}"
+                        dot.edge(input_node, node_name, penwidth="1.2")
+                else:
+                    prev_layer_size = len(ffnn.NN.layers[layer_idx - 1].neurons)
+                    for prev_neuron_idx in range(prev_layer_size):
+                        prev_node_name = f"L{layer_idx - 1}N{prev_neuron_idx}"
+                        dot.edge(prev_node_name, node_name, penwidth="1.2")  # Connect previous layer neurons
+    
+    return dot

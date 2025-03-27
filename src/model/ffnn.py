@@ -17,7 +17,7 @@ class FFNN:
             NN (MLP): Neural network of the model.
     """
 
-    def __init__(self, X, y, hidden_layer: list[int] = [8,8], weight:str="zero", loss:str="mse", active:str|list[str]="relu"):
+    def __init__(self, X, y, hidden_layer: list[int] = [8,8], loss:str="mse", active:str|list[str]="relu", seed:int = 42, weight:str="zero", **kwargs):
         """
         Args:
             Xs (np.ndarray): Data input. Array of vectors.
@@ -39,13 +39,10 @@ class FFNN:
         elif isinstance(active, list):  
             assert all(func in valid_activations for func in active), f"Some activation functions in {active} are not recognized. Choose from {valid_activations}."
 
-
-        # self.X = Matrix(X)                              # Input data / Data Layer (batch ~ in form of a matrix)
-        # self.y = Matrix([[int(val)] for val in y])      # Target output
-        self.X = X
-        # self.y = [[int(val)] for val in y]
-        self.y = y.astype(int)
+        self.X = X                                      # Input data / Data Layer (batch ~ in form of a matrix)
+        self.y = y.astype(int)                          # Target output
         self.loss = self.__getLossFunction(loss)        # Loss function
+        self.seed = seed
         
         nin = self.X.shape[1]
         nout = hidden_layer + [1] # add  output layer which only has one neuron
@@ -57,7 +54,7 @@ class FFNN:
 
         assert active_funcs[-1] == "linier", "Output Layer must use Linier Activation Function."
 
-        self.NN = MLP(nin, nout, active_funcs, weight)                                
+        self.NN = MLP(nin, nout, active_funcs, weight, seed, **kwargs)                                
 
     def __repr__(self):
         X_row, X_col = self.X.shape
@@ -82,13 +79,14 @@ class FFNN:
         """ Backward Pass of the Neural Network using loss Value """
         forward_loss.backward()
 
-    def training(self, batch_size : int = 100, learning_rate : float = 0.01, max_epoch : int = 10, verbose : int = 0) -> Value:
-        """ Train the model based on parameters """
+    def training(self, batch_size : int = 100, learning_rate : float = 0.01, max_epoch : int = 10, verbose : int = 0, split_point : float = 0.8) -> Value:
+        """ Train the model based on training hyperparameters """
         if (verbose == 1):
             pbar = tqdm(total=max_epoch)
+        np.random.seed(self.seed)
         indices = np.arange(len(self.X))     # Split Validation Set
         np.random.shuffle(indices)
-        split = int(0.8 * len(self.X)) 
+        split = int(split_point * len(self.X)) 
         X_train, X_val = self.X[indices[:split]], self.X[indices[split:]]
         y_train, y_val = self.y[indices[:split]], self.y[indices[split:]]
         for epoch in range (max_epoch):
@@ -103,10 +101,9 @@ class FFNN:
                 p.data -= learning_rate * p.grad
             if (verbose == 1):
                 validation_loss = self.forward(X_val, y_val)    # Feed Forward for Validation
-                pbar.update(1)
-                print("Epoch " + str(epoch) + " Done training")
                 print("Training Loss " + str(loss.data))
                 print("Validation Loss " + str(validation_loss.data))
+                pbar.update(1)
                 print()
         if (verbose == 1):
             pbar.close()

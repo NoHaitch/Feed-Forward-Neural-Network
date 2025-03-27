@@ -1,8 +1,9 @@
 # Reference: https://github.com/karpathy/micrograd
-import random
+import numpy as np
 from .value import Value
 from src.model.matrix import Matrix
 from src.func.activations import ActiveFunction
+from typing import Any
 
 
 class Module:
@@ -28,7 +29,7 @@ class Neuron(Module):
         label (str): Label of the neuron.
     """
 
-    def __init__(self, nin: int, mode: str = "zero", active_func="relu", label=None):
+    def __init__( self, nin: int, mode: str = "zero",  active_func = "relu", label=None, seed:int=42, **kwargs):
         """
         Args:
             nin (int): Number of inputs to the neuron.
@@ -42,21 +43,35 @@ class Neuron(Module):
         ), f"Weight initialization mode '{mode}' not recognized. Choose from {valid_mode}."
 
         # Weight Initialization
+        np.random.seed(seed)
         if mode == "zero":
             # Zero Initialization
             self.w = [Value(0, label=f"{label}_w{i+1}") for i in range(nin)]
             self.b = Value(0, label=f"{label}_b")
 
         elif mode == "uniform":
-            # TODO: Random Uniform Distribution with lower bound, upper bound, and seed
-            pass
+            lower_bound = self._validate_param(kwargs, 'lower_bound')
+            upper_bound = self._validate_param(kwargs, 'upper_bound')
+            random_weights = np.random.uniform(low=lower_bound, high=upper_bound, size=nin)
+            self.w = [Value(float(w), label=f"{label}_w{i+1}") for i, w in enumerate(random_weights)]
+            self.b = Value(float(np.random.uniform(lower_bound, upper_bound)), label="{label}_b")
 
-        else:
-            # TODO: Random Normal Distribution with mean, variance, and seed
-            pass
-
+        else:   # mode == "normal"
+            mean = self._validate_param(kwargs, 'mean')
+            variance = self._validate_param(kwargs, 'variance')
+            std_dev = np.sqrt(variance) 
+            random_weights = np.random.normal(loc=mean, scale=std_dev, size=nin)
+            self.w = [Value(float(w), label=f"{label}_w{i+1}") for i, w in enumerate(random_weights)]
+            self.b = Value(float(np.random.normal(loc=mean, scale=std_dev)), label="{label}_b")
         self.active_func = getattr(ActiveFunction, active_func)
         self.label = label
+
+    def _validate_param(self, kwargs: dict, name: str) -> Any:
+        """Helper to validate required parameters"""
+        if name not in kwargs:
+            raise ValueError(f"Parameter '{name}' required when mode={self.mode}")
+        return kwargs[name]
+
 
     def __call__(self, X: Matrix) -> Matrix:
         """Forward pass for a batch (Matrix)."""
@@ -85,8 +100,8 @@ class Layer(Module):
         label (str): Label of the layer.
     """
 
-    def __init__(self, nin, nout, mode: str = "zero", active_func="relu", label=None):
-        """
+    def __init__(self, nin, nout, mode: str = "zero", active_func="relu", label=None, seed:int=42, **kwargs):
+        """ 
         Args:
             nin (int): Number of inputs.
             nout (int): Number of outputs.
@@ -96,7 +111,7 @@ class Layer(Module):
         """
         self.label = label
         self.neurons = [
-            Neuron(nin, mode, active_func, label=f"{label}_N{i+1}") for i in range(nout)
+            Neuron(nin, mode, active_func, label=f"{label}_N{i+1}", seed=seed,**kwargs) for i in range(nout)
         ]
 
     def __call__(self, X: Matrix):
@@ -127,7 +142,7 @@ class MLP(Module):
         layers (list): List of layers in the network.
     """
 
-    def __init__(self, nin, nouts, active_funcs="relu", mode="zero"):
+    def __init__(self, nin, nouts, active_funcs = "relu", mode="zero", seed:int=42, **kwargs):
         """
         Args:
             nin (int): Number of inputs to the network.
@@ -157,6 +172,7 @@ class MLP(Module):
                         "Output-Layer" if i == len(nouts) - 1 else f"Hidden-Layer-{i+1}"
                     )
                 ),
+                seed=seed, **kwargs
             )
             for i in range(len(nouts))
         ]

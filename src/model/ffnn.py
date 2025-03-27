@@ -86,10 +86,15 @@ class FFNN:
         """ Train the model based on parameters """
         if (verbose == 1):
             pbar = tqdm(total=max_epoch)
+        indices = np.arange(len(self.X))     # Split Validation Set
+        np.random.shuffle(indices)
+        split = int(0.8 * len(self.X)) 
+        X_train, X_val = self.X[indices[:split]], self.X[indices[split:]]
+        y_train, y_val = self.y[indices[:split]], self.y[indices[split:]]
         for epoch in range (max_epoch):
             print("Starting Epoch " + str(epoch))
-            batches_X = [self.X[i:i+batch_size] for i in range(0, len(self.X), batch_size)]
-            batches_y = [self.y[i:i+batch_size] for i in range(0, len(self.y), batch_size)]
+            batches_X = [X_train[i:i+batch_size] for i in range(0, len(X_train), batch_size)]
+            batches_y = [y_train[i:i+batch_size] for i in range(0, len(y_train), batch_size)]
             for batch_X, batch_y in zip(batches_X, batches_y):
                 loss = self.forward(batch_X, batch_y)
                 self.zero_grad()
@@ -97,9 +102,12 @@ class FFNN:
             for p in self.parameters():     # Update Parameters
                 p.data -= learning_rate * p.grad
             if (verbose == 1):
+                validation_loss = self.forward(X_val, y_val)    # Feed Forward for Validation
                 pbar.update(1)
                 print("Epoch " + str(epoch) + " Done training")
                 print("Training Loss " + str(loss.data))
+                print("Validation Loss " + str(validation_loss.data))
+                print()
         if (verbose == 1):
             pbar.close()
         return loss

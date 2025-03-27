@@ -38,11 +38,14 @@ class FFNN:
             assert all(func in valid_activations for func in active), f"Some activation functions in {active} are not recognized. Choose from {valid_activations}."
 
 
-        self.X = Matrix(X)                              # Input data / Data Layer (batch ~ in form of a matrix)
-        self.y = Matrix([[int(val)] for val in y])      # Target output
+        # self.X = Matrix(X)                              # Input data / Data Layer (batch ~ in form of a matrix)
+        # self.y = Matrix([[int(val)] for val in y])      # Target output
+        self.X = X
+        # self.y = [[int(val)] for val in y]
+        self.y = y.astype(int)
         self.loss = self.__getLossFunction(loss)        # Loss function
         
-        nin = self.X.cols
+        nin = self.X.shape[1]
         nout = hidden_layer + [1] # add  output layer which only has one neuron
 
         if type(active) != list:
@@ -55,7 +58,8 @@ class FFNN:
         self.NN = MLP(nin, nout, active_funcs, weight)                                
 
     def __repr__(self):
-        return f"Fully Connected Feed Forward Neural Network\n> X = {self.X.rows} x {self.X.cols}\n> y = {self.X.rows} x {self.X.cols}\n> {self.NN}"
+        X_row, X_col = self.X.shape
+        return f"Fully Connected Feed Forward Neural Network\n> X = {str(X_row)} x {str(X_col)}\n> y = {str(len(self.y))} x {str(1)}\n> {self.NN}"
 
     def __getLossFunction(self, loss: str) -> callable:
         """ Get the corresponding loss function from the string. """
@@ -68,10 +72,31 @@ class FFNN:
         
         return loss_functions[loss]
     
-    def forward(self):
+    def forward(self, batch_X : np.ndarray, batch_y : np.ndarray) -> Value:
         """ Forward Pass of the neural network using loss function. """
-        return self.loss(self.y, self.NN(self.X))
+        return self.loss(Matrix(batch_y).transpose(), self.NN(Matrix(batch_X)))
     
+    def backpropagation(self, forward_loss : Value):
+        """ Backward Pass of the Neural Network using loss Value """
+        self.zero_grad()
+        forward_loss.backward()
+
+    def training(self, batch_size : int = 100, learning_rate : float = 0.01, max_epoch : int = 10, verbose : int = 0) -> Value:
+        """ Train the model based on parameters """
+        for epoch in range (max_epoch):
+            indices = np.random.permutation(len(self.X))    # Shuffle Data for this epoch
+            X_shuffled = self.X[indices]
+            y_shuffled = self.y[indices]
+            batches_X = [X_shuffled[i:i+batch_size] for i in range(0, len(X_shuffled), batch_size)]
+            batches_y = [y_shuffled[i:i+batch_size] for i in range(0, len(y_shuffled), batch_size)]
+            for batch_X, batch_y in zip(batches_X, batches_y):
+                loss = self.forward(batch_X, batch_y)
+                self.backpropagation(loss)
+                for p in self.parameters():     # Update Parameters
+                    p.data -= learning_rate * p.grad
+            print("epoch: " + str(epoch) + " Done training")
+        return loss
+
     def parameters(self):
         return self.NN.parameters()
 

@@ -15,7 +15,6 @@ class LossFunction:
                 y_true (Matrix): True values (Matrix).
                 y_pred (Matrix): Predicted values (Matrix).
         """
-
         assert isinstance(y_true, Matrix) and isinstance(y_pred, Matrix), "Inputs must be Matrix instances."
         assert y_true.rows == y_pred.rows and y_true.cols == y_pred.cols, "Matrix dimensions must match."
 

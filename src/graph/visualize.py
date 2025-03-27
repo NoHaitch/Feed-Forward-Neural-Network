@@ -1,4 +1,5 @@
 from graphviz import Digraph
+from src.model.matrix import Matrix
 
 
 def trace(root):
@@ -45,7 +46,7 @@ def draw_ffnn(ffnn):
     dot = Digraph(format="svg", graph_attr={"rankdir": "LR", "nodesep": "1.5"})  # Increase node spacing
     
     # Input Layer
-    input_layer_size = ffnn.X.cols
+    input_layer_size = ffnn.X.shape[1]
     with dot.subgraph() as sub:
         sub.attr(rank="same")
         for i in range(input_layer_size):

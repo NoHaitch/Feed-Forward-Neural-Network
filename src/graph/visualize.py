@@ -18,7 +18,9 @@ def trace(root):
 
 
 def draw_dot(root):
-    dot = Digraph(format="svg", graph_attr={"rankdir": "LR"})  # LR = left to right
+    dot = Digraph(
+        format="svg", graph_attr={"rankdir": "LR"}
+    )  # LR = left to right graph
 
     nodes, edges = trace(root)
     for n in nodes:
@@ -41,35 +43,78 @@ def draw_dot(root):
 
     return dot
 
+
 def draw_ffnn(ffnn):
-    """ Draws the FFNN as a feedforward neural network, including the input layer."""
-    dot = Digraph(format="svg", graph_attr={"rankdir": "LR", "nodesep": "1.5"})  # Increase node spacing
-    
+    """Draws the FFNN as a feedforward neural network, using labels from the model."""
+    dot = Digraph(
+        format="svg", graph_attr={"rankdir": "LR", "nodesep": "1", "ranksep": "4"}
+    )
+
     # Input Layer
     input_layer_size = ffnn.X.shape[1]
     with dot.subgraph() as sub:
         sub.attr(rank="same")
         for i in range(input_layer_size):
-            node_name = f"Input{i}"
-            sub.node(node_name, label=f"Input {i}", shape="circle", width="0.6")  # Adjust width
-    
+            node_name = f"Input{i+1}"
+            sub.node(node_name, label=f"Input {i+1}", shape="circle", width="0.6")
+
     # Hidden and Output Layers
     for layer_idx, layer in enumerate(ffnn.NN.layers):
         with dot.subgraph() as sub:
-            sub.attr(rank="same")  # Ensure neurons in a layer are aligned horizontally
-            for neuron_idx, neuron in enumerate(layer.neurons):
-                node_name = f"L{layer_idx}N{neuron_idx}"
-                sub.node(node_name, label=f"Neuron {neuron_idx}\n{neuron.active_func.__name__}", shape="circle", width="0.7")
-                
-                # Connect input layer to first hidden layer
+            sub.attr(rank="same")
+
+            # Bias Node
+            bias_node_name = f"Bias_L{layer_idx+1}"
+            dot.node(
+                bias_node_name,
+                label=layer.label + "_Bias",
+                shape="circle",
+                width="0.5",
+            )
+
+            for neuron in layer.neurons:
+                neuron_name = neuron.label
+                sub.node(
+                    neuron_name,
+                    label=f"{neuron.label} | {neuron.active_func.__name__}",
+                    shape="circle",
+                    width="0.7",
+                )
+
+                # Connect bias to neurons
+                dot.edge(
+                    bias_node_name,
+                    neuron_name,
+                    penwidth="1.2",
+                    label=f"{neuron.b.label} {neuron.b.data:.2f}",
+                    tailport="e",
+                    headport="w",
+                )
+
+                # Connect neurons from previous layer
                 if layer_idx == 0:
                     for i in range(input_layer_size):
-                        input_node = f"Input{i}"
-                        dot.edge(input_node, node_name, penwidth="1.2")
+                        input_node = f"Input{i+1}"
+                        weight = neuron.w[i]
+                        dot.edge(
+                            input_node,
+                            neuron_name,
+                            penwidth="1.2",
+                            label=f"{weight.label} {weight.data:.2f}",
+                            tailport="e",
+                            headport="w",
+                        )
                 else:
-                    prev_layer_size = len(ffnn.NN.layers[layer_idx - 1].neurons)
-                    for prev_neuron_idx in range(prev_layer_size):
-                        prev_node_name = f"L{layer_idx - 1}N{prev_neuron_idx}"
-                        dot.edge(prev_node_name, node_name, penwidth="1.2")  # Connect previous layer neurons
-    
+                    prev_layer = ffnn.NN.layers[layer_idx - 1]
+                    for prev_neuron in prev_layer.neurons:
+                        weight = neuron.w[prev_layer.neurons.index(prev_neuron)]
+                        dot.edge(
+                            prev_neuron.label,
+                            neuron_name,
+                            penwidth="1.2",
+                            label=f"{weight.label} {weight.data:.2f}",
+                            tailport="e",
+                            headport="w",
+                        )
+
     return dot

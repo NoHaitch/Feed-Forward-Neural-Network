@@ -1,8 +1,10 @@
 import numpy as np
+# import sys
 from src.model.value import Value
 from src.model.matrix import Matrix
 from src.model.nn import MLP
 from src.func.loss import LossFunction 
+from tqdm import tqdm
 
 
 class FFNN:
@@ -78,23 +80,28 @@ class FFNN:
     
     def backpropagation(self, forward_loss : Value):
         """ Backward Pass of the Neural Network using loss Value """
-        self.zero_grad()
         forward_loss.backward()
 
     def training(self, batch_size : int = 100, learning_rate : float = 0.01, max_epoch : int = 10, verbose : int = 0) -> Value:
         """ Train the model based on parameters """
+        if (verbose == 1):
+            pbar = tqdm(total=max_epoch)
         for epoch in range (max_epoch):
-            indices = np.random.permutation(len(self.X))    # Shuffle Data for this epoch
-            X_shuffled = self.X[indices]
-            y_shuffled = self.y[indices]
-            batches_X = [X_shuffled[i:i+batch_size] for i in range(0, len(X_shuffled), batch_size)]
-            batches_y = [y_shuffled[i:i+batch_size] for i in range(0, len(y_shuffled), batch_size)]
+            print("Starting Epoch " + str(epoch))
+            batches_X = [self.X[i:i+batch_size] for i in range(0, len(self.X), batch_size)]
+            batches_y = [self.y[i:i+batch_size] for i in range(0, len(self.y), batch_size)]
             for batch_X, batch_y in zip(batches_X, batches_y):
                 loss = self.forward(batch_X, batch_y)
+                self.zero_grad()
                 self.backpropagation(loss)
-                for p in self.parameters():     # Update Parameters
-                    p.data -= learning_rate * p.grad
-            print("epoch: " + str(epoch) + " Done training")
+            for p in self.parameters():     # Update Parameters
+                p.data -= learning_rate * p.grad
+            if (verbose == 1):
+                pbar.update(1)
+                print("Epoch " + str(epoch) + " Done training")
+                print("Training Loss " + str(loss.data))
+        if (verbose == 1):
+            pbar.close()
         return loss
 
     def parameters(self):

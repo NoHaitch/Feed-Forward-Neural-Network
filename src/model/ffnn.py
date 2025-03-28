@@ -86,7 +86,7 @@ class FFNN:
 
     def forward(self, batch_X: np.ndarray, batch_y: np.ndarray) -> Value:
         """Forward Pass of the neural network using loss function."""
-        return self.loss(Matrix(batch_y).transpose(), self.NN(Matrix(batch_X)))
+        return self.loss(Matrix(batch_y), self.NN(Matrix(batch_X)))
 
     def backpropagation(self, forward_loss: Value):
         """Backward Pass of the Neural Network using loss Value"""

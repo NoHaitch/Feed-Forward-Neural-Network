@@ -1,7 +1,7 @@
 # Reference: https://github.com/karpathy/micrograd
 
 class Value:
-    """ Class to represent a value in a mathematical expression. Used for automatic differentiation.
+    """ Class to represent a value in a mathematical expression. Used for automatic gradient.
 
         Attributes:
             data (_type_): Numerical value of node. 
@@ -9,7 +9,7 @@ class Value:
             _backward (function): Function to compute the gradient. This will contain the chain rule for derivatives.
             _prev (set): Children nodes.
             _op (str): Operation performed to get this value.
-            label (str): Label for the node. Used to vizualize the graph.
+            label (str): Label for the node. Used to visualize the graph.
     """
 
     def __init__(self, data, _children=(), _op="", label=""):

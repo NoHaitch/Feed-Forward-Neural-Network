@@ -1,5 +1,4 @@
 from graphviz import Digraph
-from src.model.matrix import Matrix
 import matplotlib.pyplot as plt
 
 
@@ -44,17 +43,22 @@ class Visualizer:
         return dot
 
     @staticmethod
-    def draw_ffnn(ffnn):
-        """Draws the FFNN structure using Graphviz, keeping weight labels and gradients on edges."""
+    def draw_ffnn(ffnn, input_size):
+        """
+        Draws the FFNN structure using Graphviz, keeping weight labels and gradients on edges.
+
+        Args:
+            ffnn (FFNN): The feedforward neural network model.
+            input_size (int): Number of input features.
+        """
         dot = Digraph(
             format="svg", graph_attr={"rankdir": "LR", "nodesep": "1", "ranksep": "4"}
         )
 
         # Input Layer
-        input_layer_size = ffnn.X.shape[1]
         with dot.subgraph() as sub:
             sub.attr(rank="same")
-            for i in range(input_layer_size):
+            for i in range(input_size):
                 node_name = f"Input{i+1}"
                 sub.node(node_name, label=f"Input {i+1}", shape="circle", width="0.6")
 
@@ -93,7 +97,7 @@ class Visualizer:
 
                     # Connect neurons from previous layer (with weight labels)
                     if layer_idx == 0:
-                        for i in range(input_layer_size):
+                        for i in range(input_size):
                             input_node = f"Input{i+1}"
                             weight = neuron.w[i]
                             dot.edge(

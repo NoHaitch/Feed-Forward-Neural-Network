@@ -17,12 +17,12 @@ class FFNN:
             NN (MLP): Neural network of the model.
     """
 
-    def __init__(self, X, y, hidden_layer: list[int] = [8,8], loss:str="mse", active:str|list[str]="relu", seed:int = 42, weight:str="zero", **kwargs):
+    def __init__(self, X, y, layers: list[int] = [8,8], loss:str="mse", active:str|list[str]="relu", seed:int = 42, weight:str="zero", **kwargs):
         """
         Args:
             Xs (np.ndarray): Data input. Array of vectors.
             y (np.ndarray): Target output. Array of value.
-            hidden_layer (list[int]): The amount of neuron and amount of layer in the hidden layer.
+            layer (list[int]): The amount of neuron and amount of layer in all layer.
             weight (str, optional): Weight initialization mode. enum: ['zero', 'uniform', 'normal']
             loss (str, optional): Loss function to use. enum: ['mse', 'bce', 'cce' ]
             active_funcs (str|list[str], optional): List of activation functions for each layer. enum: ['linier' 'relu', 'sigmoid', 'tanh', 'softmax', 'exp', 'log']
@@ -33,6 +33,9 @@ class FFNN:
 
         assert weight in valid_weights, f"Weight initialization mode '{weight}' not recognized. Choose from {valid_weights}."
         assert loss in valid_losses, f"Loss function '{loss}' not recognized. Choose from {valid_losses}."
+
+        assert X.shape[1] == layers[0], f"Input Layer must include same amount of neuron as input features"
+        assert len(layers)-1 == len(active), f"Every layer's activation function must be specified"
 
         if isinstance(active, str):  
             assert active in valid_activations, f"Activation function '{active}' not recognized. Choose from {valid_activations}."
@@ -45,13 +48,12 @@ class FFNN:
         self.seed = seed
         
         nin = self.X.shape[1]
-        # nout = hidden_layer + [1] # add  output layer which only has one neuron
-        nout = hidden_layer + [10] 
+        nout = layers[1:]
 
-        if type(active) != list:
-            active_funcs = [active for _ in range(len(nout) - 1)] + ["sigmoid"]
-        else:
-            active_funcs = active
+        # if type(active) != list:
+        #     active_funcs = [active for _ in range(len(nout) - 1)] + ["sigmoid"]
+        # else:
+        active_funcs = active
 
         # assert active_funcs[-1] == "linier", "Output Layer must use Linier Activation Function."
 

@@ -1,5 +1,8 @@
 # Reference: https://github.com/karpathy/micrograd
 
+import numpy as np
+import math
+
 class Value:
     """ Class to represent a value in a mathematical expression. Used for automatic differentiation.
 
@@ -62,6 +65,31 @@ class Value:
             self.grad += (other * self.data**(other-1)) * out.grad
         out._backward = _backward
 
+        return out
+    
+    def log(self):
+        """Natural logarithm of the value."""
+        eps = 1e-15
+        x = self.data
+        x_clamped = max(x, eps) if x <= 0 else x
+        out = Value(np.log(x_clamped), (self,), 'log')
+        
+        def _backward():
+            self.grad += out.grad * (1 / x_clamped)
+        
+        out._backward = _backward
+        return out
+    
+    def exp(self):
+        """Exponential function e^x"""
+        x = self.data
+        out = Value(math.exp(x), (self,), 'exp')
+        
+        def _backward():
+            # d(e^x)/dx = e^x
+            self.grad += out.data * out.grad
+        
+        out._backward = _backward
         return out
 
 

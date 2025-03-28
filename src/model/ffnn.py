@@ -24,11 +24,11 @@ class FFNN:
             y (np.ndarray): Target output. Array of value.
             hidden_layer (list[int]): The amount of neuron and amount of layer in the hidden layer.
             weight (str, optional): Weight initialization mode. enum: ['zero', 'uniform', 'normal']
-            loss (str, optional): Loss function to use. enum: ['mse', TODO ... ]
+            loss (str, optional): Loss function to use. enum: ['mse', 'bce', 'cce' ]
             active_funcs (str|list[str], optional): List of activation functions for each layer. enum: ['linier' 'relu', 'sigmoid', 'tanh', 'softmax', 'exp', 'log']
         """
         valid_weights = {'zero', 'uniform', 'normal'}
-        valid_losses = {'mse'}  
+        valid_losses = {'mse', 'bce', 'cce'}  
         valid_activations = {'linier', 'relu', 'sigmoid', 'tanh', 'softmax', 'exp', 'log'}
 
         assert weight in valid_weights, f"Weight initialization mode '{weight}' not recognized. Choose from {valid_weights}."
@@ -45,14 +45,15 @@ class FFNN:
         self.seed = seed
         
         nin = self.X.shape[1]
-        nout = hidden_layer + [1] # add  output layer which only has one neuron
+        # nout = hidden_layer + [1] # add  output layer which only has one neuron
+        nout = hidden_layer + [10] 
 
         if type(active) != list:
-            active_funcs = [active for _ in range(len(nout) - 1)] + ["linier"]
+            active_funcs = [active for _ in range(len(nout) - 1)] + ["sigmoid"]
         else:
             active_funcs = active
 
-        assert active_funcs[-1] == "linier", "Output Layer must use Linier Activation Function."
+        # assert active_funcs[-1] == "linier", "Output Layer must use Linier Activation Function."
 
         self.NN = MLP(nin, nout, active_funcs, weight, seed, **kwargs)                                
 
@@ -63,7 +64,9 @@ class FFNN:
     def __getLossFunction(self, loss: str) -> callable:
         """ Get the corresponding loss function from the string. """
         loss_functions = {
-            "mse": LossFunction.mse
+            "mse": LossFunction.mse,
+            "bce": LossFunction.bce,
+            "cce": LossFunction.cce
         }
         
         if loss not in loss_functions:

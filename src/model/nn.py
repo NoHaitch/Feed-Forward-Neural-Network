@@ -37,6 +37,7 @@ class Neuron(Module):
             active_func (str, optional): Activation function.
             label (str, optional): Label of the neuron.
         """
+        self.activation = active_func
         valid_mode = {"zero", "uniform", "normal"}
         assert (
             mode in valid_mode
@@ -54,7 +55,7 @@ class Neuron(Module):
             upper_bound = self._validate_param(kwargs, 'upper_bound')
             random_weights = np.random.uniform(low=lower_bound, high=upper_bound, size=nin)
             self.w = [Value(float(w), label=f"{label}_w{i+1}") for i, w in enumerate(random_weights)]
-            self.b = Value(float(np.random.uniform(lower_bound, upper_bound)), label="{label}_b")
+            self.b = Value(float(np.random.uniform(lower_bound, upper_bound)), label=f"{label}_b")
 
         else:   # mode == "normal"
             mean = self._validate_param(kwargs, 'mean')
@@ -62,7 +63,7 @@ class Neuron(Module):
             std_dev = np.sqrt(variance) 
             random_weights = np.random.normal(loc=mean, scale=std_dev, size=nin)
             self.w = [Value(float(w), label=f"{label}_w{i+1}") for i, w in enumerate(random_weights)]
-            self.b = Value(float(np.random.normal(loc=mean, scale=std_dev)), label="{label}_b")
+            self.b = Value(float(np.random.normal(loc=mean, scale=std_dev)), label=f"{label}_b")
         self.active_func = getattr(ActiveFunction, active_func)
         self.label = label
 
@@ -76,13 +77,14 @@ class Neuron(Module):
     def __call__(self, X: Matrix) -> Matrix:
         """Forward pass for a batch (Matrix)."""
         assert isinstance(X, Matrix), "Layer input must be a Matrix."
-
         # Z = wT . x + b
         weighted_sum = X.dot(Matrix([self.w]).transpose())
-
-        activated_output = self.active_func(weighted_sum.add_scalar(self.b))
-
-        return activated_output
+        biased = weighted_sum.add_scalar(self.b)
+        if self.activation == "softmax":
+            return biased
+        else:
+            activated_output = self.active_func(biased)
+            return activated_output
 
     def parameters(self) -> list[Value]:
         """Returns all trainable parameters of the neuron."""
@@ -116,7 +118,6 @@ class Layer(Module):
 
     def __call__(self, X: Matrix):
         """Call the forward pass of each neuron"""
-
         assert isinstance(X, Matrix), "Layer input must be a Matrix."
 
         out_data = [
@@ -125,7 +126,6 @@ class Layer(Module):
         ]
 
         out = Matrix(out_data)
-
         return out
 
     def parameters(self):
@@ -150,6 +150,7 @@ class MLP(Module):
             mode (str): Weight and Bias Initialization mode.
             active_funcs (str | list[str]): Activation function(s). Either a function for all layers or a list of functions for each layer.
         """
+        self.activation = active_funcs
         sz = [nin] + nouts 
 
         if type(active_funcs) != list:
@@ -181,6 +182,8 @@ class MLP(Module):
         """Forward pass of the network."""
         for layer in self.layers:
             x = layer(x)
+            if self.activation == "softmax":
+                x = ActiveFunction.softmax(x)
         return x
 
     def parameters(self):

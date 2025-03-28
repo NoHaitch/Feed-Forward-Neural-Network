@@ -1,6 +1,7 @@
 import math
 from src.model.value import Value
 from src.model.matrix import Matrix
+import numpy as np
 
 
 class ActiveFunction:
@@ -62,7 +63,6 @@ class ActiveFunction:
         for row in out_data:
             for val in row:
                 val._backward = _backward
-
         return Matrix(out_data)
 
     @staticmethod
@@ -86,28 +86,80 @@ class ActiveFunction:
 
         return Matrix(out_data)
 
+    # @staticmethod
+    # def softmax(X: Matrix) -> Matrix:
+    #     """Numerically stable softmax"""
+    #     out_data = []
+    #     for row in X.data:
+    #         # 1. Find max logit (crucial for stability)
+    #         max_logit = max(v.data for v in row)
+            
+    #         # 2. Compute shifted exponentials
+    #         exps = [(v - max_logit).exp() for v in row]  # Uses Value.exp()
+    #         sum_exp = sum(exps)
+            
+    #         # 3. Create softmax outputs
+    #         out_row = []
+    #         for k in range(len(row)):
+    #             # Division creates new Value node
+    #             out_val = exps[k] / sum_exp
+    #             out_val._op = 'softmax'
+                
+    #             # 4. Define backward pass
+    #             def _backward():
+    #                 for j in range(len(row)):
+    #                     if j == k:
+    #                         row[j].grad += out_val.data * (1 - out_val.data) * out_val.grad
+    #                     else:
+    #                         row[j].grad += -out_val.data * (exps[j]/sum_exp).data * out_val.grad
+                
+    #             out_val._backward = _backward
+    #             out_row.append(out_val)
+            
+    #         out_data.append(out_row)
+        
+    #     return Matrix(out_data)
+
     @staticmethod
     def softmax(X: Matrix) -> Matrix:
-        """ Softmax activation function. For a matrix X, softmax is applied row-wise. """
+        """
+        Stable row-wise softmax for batches.
+        Input: 50x10 Matrix of Values, Output: 50x10 Matrix (rows sum to 1.0).
+        """
         out_data = []
-        for row in X.data:
-            exp_vals = [math.exp(val.data) for val in row]
-            sum_exp = sum(exp_vals)
-            softmax_vals = [Value(exp_vals[i] / sum_exp, (row[i],), "softmax") for i in range(len(row))]
+        
+        for row in X.data:  # Process each sample independently (50 rows)
+            # === Step 1: Stable Softmax ===
+            max_val = max(val.data for val in row)  # Avoid overflow
+            exp_vals = [math.exp(val.data - max_val) for val in row]
+            sum_exp = sum(exp_vals)  # Normalization factor
+            
+            # Softmax probabilities (guaranteed sum=1.0)
+            softmax_vals = [
+                Value(exp_val / sum_exp, (row[i],), "softmax") 
+                for i, exp_val in enumerate(exp_vals)
+            ]
             out_data.append(softmax_vals)
 
-        def _backward():
-            for i, row in enumerate(X.data):
-                for j, val in enumerate(row):
-                    softmax_val = out_data[i][j].data
-                     # Derivative of softmax = softmax * (1 - softmax)
-                    val.grad += (softmax_val * (1 - softmax_val)) * out_data[i][j].grad
+            # === Step 2: Correct Gradient (Jacobian) ===
+            def _backward():
+                n = len(softmax_vals)
+                for i in range(n):
+                    for j in range(n):
+                        # ∂L/∂x_j = Σ_i (∂L/∂y_i * ∂y_i/∂x_j)
+                        # ∂y_i/∂x_j = y_i * (1_{i=j} - y_j)
+                        row[j].grad += (
+                            softmax_vals[i].data * 
+                            ((1 if i == j else 0) - softmax_vals[j].data) * 
+                            softmax_vals[i].grad
+                        )
 
-        for row in out_data:
-            for val in row:
+            # Assign backward to all outputs in this row
+            for val in softmax_vals:
                 val._backward = _backward
-
-        return Matrix(out_data)
+        
+        return Matrix(out_data)  # 50x10 output
+        
 
     @staticmethod
     def exp(X: Matrix) -> Matrix:

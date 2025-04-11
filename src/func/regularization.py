@@ -1,7 +1,4 @@
-import numpy as np
 from src.model.value import Value
-from src.utils.converter import Converter
-from src.model.matrix import Matrix
 
 
 class RegularizationFunctions:

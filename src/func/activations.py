@@ -120,45 +120,86 @@ class ActiveFunction:
         
     #     return Matrix(out_data)
 
+    # @staticmethod
+    # def softmax(X: Matrix) -> Matrix:
+    #     """
+    #     Stable row-wise softmax for batches.
+    #     Input: 50x10 Matrix of Values, Output: 50x10 Matrix (rows sum to 1.0).
+    #     """
+    #     out_data = []
+        
+    #     for row in X.data:  # Process each sample independently (50 rows)
+    #         # === Step 1: Stable Softmax ===
+    #         max_val = max(val.data for val in row)  # Avoid overflow
+    #         exp_vals = [math.exp(val.data - max_val) for val in row]
+    #         sum_exp = sum(exp_vals)  # Normalization factor
+            
+    #         # Softmax probabilities (guaranteed sum=1.0)
+    #         softmax_vals = [
+    #             Value(exp_val / sum_exp, (row[i],), "softmax") 
+    #             for i, exp_val in enumerate(exp_vals)
+    #         ]
+    #         out_data.append(softmax_vals)
+
+    #         # === Step 2: Correct Gradient (Jacobian) ===
+    #         def _backward():
+    #             n = len(softmax_vals)
+    #             for i in range(n):
+    #                 for j in range(n):
+    #                     # ∂L/∂x_j = Σ_i (∂L/∂y_i * ∂y_i/∂x_j)
+    #                     # ∂y_i/∂x_j = y_i * (1_{i=j} - y_j)
+    #                     row[j].grad += (
+    #                         softmax_vals[i].data * 
+    #                         ((1 if i == j else 0) - softmax_vals[j].data) * 
+    #                         softmax_vals[i].grad
+    #                     )
+
+    #         # Assign backward to all outputs in this row
+    #         for val in softmax_vals:
+    #             val._backward = _backward
+        
+    #     return Matrix(out_data)  # 50x10 output
+
     @staticmethod
     def softmax(X: Matrix) -> Matrix:
         """
-        Stable row-wise softmax for batches.
-        Input: 50x10 Matrix of Values, Output: 50x10 Matrix (rows sum to 1.0).
+        Softmax activation function. 
+        Softmax(X_i) = exp(X_i) / ∑_j exp(X_j) (applied row-wise for batches).
         """
         out_data = []
-        
-        for row in X.data:  # Process each sample independently (50 rows)
-            # === Step 1: Stable Softmax ===
-            max_val = max(val.data for val in row)  # Avoid overflow
-            exp_vals = [math.exp(val.data - max_val) for val in row]
-            sum_exp = sum(exp_vals)  # Normalization factor
-            
-            # Softmax probabilities (guaranteed sum=1.0)
-            softmax_vals = [
-                Value(exp_val / sum_exp, (row[i],), "softmax") 
-                for i, exp_val in enumerate(exp_vals)
-            ]
-            out_data.append(softmax_vals)
+        # Cache intermediate Values for backprop
+        exp_values = []  
+        sums = []  
 
-            # === Step 2: Correct Gradient (Jacobian) ===
-            def _backward():
-                n = len(softmax_vals)
-                for i in range(n):
-                    for j in range(n):
-                        # ∂L/∂x_j = Σ_i (∂L/∂y_i * ∂y_i/∂x_j)
-                        # ∂y_i/∂x_j = y_i * (1_{i=j} - y_j)
-                        row[j].grad += (
-                            softmax_vals[i].data * 
-                            ((1 if i == j else 0) - softmax_vals[j].data) * 
-                            softmax_vals[i].grad
-                        )
+        # Step 1: Compute exp(X) and row-wise sums
+        for row in X.data:
+            exp_row = [val.exp() for val in row]  # exp(X_ij)
+            sum_exp = exp_row[0]
+            for val in exp_row[1:]:
+                sum_exp = sum_exp + val  # ∑_j exp(X_j)
+            exp_values.append(exp_row)
+            sums.append(sum_exp)
 
-            # Assign backward to all outputs in this row
-            for val in softmax_vals:
+        # Step 2: Compute softmax = exp(X) / sum(exp(X))
+        for i, row in enumerate(exp_values):
+            out_data.append([val / sums[i] for val in row])  # Softmax(X_i)
+
+        # Step 3: Define backward pass
+        def _backward():
+            for i, row in enumerate(out_data):
+                for j, softmax_val in enumerate(row):
+                    # Gradient of softmax: ∂L/∂X_i = softmax_i * (∂L/∂Y_i - ∑_k softmax_k * ∂L/∂Y_k)
+                    grad = softmax_val.data * (softmax_val.grad - sum(
+                        s.data * s.grad for s in row
+                    ))
+                    X.data[i][j].grad += grad
+
+        # Attach backward to all output Values
+        for row in out_data:
+            for val in row:
                 val._backward = _backward
-        
-        return Matrix(out_data)  # 50x10 output
+
+        return Matrix(out_data)
         
 
     @staticmethod

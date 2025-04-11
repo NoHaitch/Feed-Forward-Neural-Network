@@ -83,14 +83,9 @@ _How to install and use your project_
 
 ## Instruction
 
-Instruction to run/build/etc the program  
-example:
+How to use the model can be seen in the main.ipynb. 
 
-`make build` : To build from source to binary into bin/main  
-`make all` : Run binary directly after building  
-`make clean` : Remove all build generated files  
-`make ADT.test` : Running test for ADT test file, for example ( `make time.test` )  
-`make test.all` : Running all test
+You can also see the testing files for the example of usage.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -98,5 +93,5 @@ example:
 
 |   NIM    |            Name            | Tasks                                                                                                                                                       |
 | :------: | :------------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 13522037 |    Farhan Nafis Rayhan     | Backward Propagation, Automatic Gradient, Weight Initialization and Seed, Verbose and Progress Bar, Activation Functions, Loss Functions, Training          |
-| 13522091 | Raden Francisco Trianto B. | Batch Input, Activation Functions, Forward Propagation, Automatic Gradient, Neural Network (class Value, Neuron, Layer, etc.), Model Visualization and Plot |
+| 13522037 |    Farhan Nafis Rayhan     | Backward Propagation, Automatic Gradient, Weight Initialization and Seed, Verbose and Progress Bar, Activation Functions, Loss Functions, Training, Testing, Report |
+| 13522091 | Raden Francisco Trianto B. | Batch Input, Activation Functions, Forward Propagation, Automatic Gradient, Neural Network (class Value, Neuron, Layer, etc.), Model Visualization and Plot, Testing, Report |

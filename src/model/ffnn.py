@@ -250,3 +250,16 @@ class FFNN:
 
         print(f"Model loaded from {file_path}.json")
         return ffnn
+    
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """
+        Predict output for given input data.
+        
+        Args:
+            X (np.ndarray): Input data.
+        
+        Returns:
+            np.ndarray: Model predictions.
+        """
+        
+        return self.NN(Matrix(X))

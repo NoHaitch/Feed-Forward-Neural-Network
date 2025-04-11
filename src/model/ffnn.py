@@ -114,6 +114,8 @@ class FFNN:
         X_train, X_val = X[indices[:split]], X[indices[split:]]
         y_train, y_val = y[indices[:split]], y[indices[split:]]
 
+        loss_history = {"train_loss": [], "val_loss": []}
+
         for epoch in range(max_epoch):
             print(f"Starting Epoch {epoch}")
             batches_X = [
@@ -124,19 +126,21 @@ class FFNN:
             ]
             for batch_X, batch_y in zip(batches_X, batches_y):
                 loss = self.forward(batch_X, batch_y)
+                loss_history["train_loss"].append(loss.data)
                 self.zero_grad()
                 self.backpropagation(loss)
             for p in self.parameters():
                 p.data -= learning_rate * p.grad
             if verbose == 1:
                 validation_loss = self.forward(X_val, y_val)
+                loss_history["val_loss"].append(validation_loss.data)
                 print(f"Training Loss: {loss.data}")
                 print(f"Validation Loss: {validation_loss.data}")
                 pbar.update(1)
                 print()
         if verbose == 1:
             pbar.close()
-        return loss
+        return loss, loss_history
 
     def parameters(self):
         return self.NN.parameters()

@@ -1,7 +1,6 @@
 from graphviz import Digraph
 import matplotlib.pyplot as plt
 
-
 class Visualizer:
     """A static class for visualizing neural networks and their components."""
 
@@ -192,3 +191,35 @@ class Visualizer:
             plt.ylabel("Frequency")
             plt.grid(True)
             plt.show()
+
+    @staticmethod
+    def plot_loss_history(loss_history):
+        """
+        Plots the training and validation loss history in two separate graphs.
+
+        Args:
+            loss_history (dict): A dictionary containing:
+                - "train_loss": List of training losses per batch.
+                - "val_loss": List of validation losses per epoch.
+        """
+        # Plot Training Loss
+        plt.figure(figsize=(10, 5))
+        plt.plot(range(1, len(loss_history["train_loss"]) + 1), loss_history["train_loss"], 
+                 label="Training Loss", color="blue", marker="o")
+        plt.xlabel("Steps (Batches)")
+        plt.ylabel("Loss")
+        plt.title("Training Loss Over Time")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+        # Plot Validation Loss
+        plt.figure(figsize=(10, 5))
+        plt.plot(range(1, len(loss_history["val_loss"]) + 1), loss_history["val_loss"], 
+                 label="Validation Loss", color="red", marker="s")
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.title("Validation Loss Over Epochs")
+        plt.legend()
+        plt.grid(True)
+        plt.show()

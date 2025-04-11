@@ -223,3 +223,44 @@ class Visualizer:
         plt.legend()
         plt.grid(True)
         plt.show()
+
+    @staticmethod
+    def compare_loss_histories(history_list):
+        """
+        Compares multiple loss histories in two side-by-side plots.
+
+        Args:
+            history_list (list of dict): Each dictionary should contain:
+                - "train_loss" (list of float): Training loss per batch.
+                - "val_loss" (list of float): Validation loss per epoch.
+        
+        Example:
+            history1 = {"train_loss": [..], "val_loss": [..]}
+            history2 = {"train_loss": [..], "val_loss": [..]}
+            compare_loss_histories([history1, history2])
+        """
+        plt.figure(figsize=(12, 5))
+
+        # Plot Training Loss (Smoothed per Epoch)
+        plt.subplot(1, 2, 1)
+        for history in history_list:
+            train_loss_per_epoch = [history["train_loss"][i] for i in range(len(history["val_loss"]))] 
+            epochs = range(1, len(train_loss_per_epoch) + 1)
+            plt.plot(epochs, train_loss_per_epoch, marker='o')
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.title("Training Loss Comparison")
+        plt.grid(True)
+
+        # Plot Validation Loss
+        plt.subplot(1, 2, 2)
+        for history in history_list:
+            epochs = range(1, len(history["val_loss"]) + 1)
+            plt.plot(epochs, history["val_loss"], marker='s')
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.title("Validation Loss Comparison")
+        plt.grid(True)
+
+        plt.tight_layout()
+        plt.show()

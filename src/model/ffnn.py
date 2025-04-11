@@ -5,6 +5,7 @@ from src.model.value import Value
 from src.model.matrix import Matrix
 from src.model.nn import MLP
 from src.func.loss import LossFunction
+from src.func.regularization import RegularizationFunctions
 from src.graph.visualize import Visualizer
 from tqdm import tqdm
 
@@ -16,6 +17,7 @@ class FFNN:
         self,
         layers: list[int] = [8, 8],
         loss: str = "mse",
+        regularization = "none",
         active: str | list[str] = "relu",
         seed: int = 42,
         weight: str = "zero",
@@ -32,6 +34,7 @@ class FFNN:
         """
         valid_weights = {"zero", "uniform", "normal"}
         valid_losses = {"mse", "bce", "cce"}
+        valid_regularization = {"none", "l1", "l2"}
         valid_activations = {
             "linier",
             "relu",
@@ -48,7 +51,9 @@ class FFNN:
         assert (
             loss in valid_losses
         ), f"Invalid loss function: {loss}. Choose from {valid_losses}."
-
+        assert (
+            regularization in valid_regularization
+        ), f"Invalid regularization: {regularization}. Choose from {valid_regularization}."
         if isinstance(active, str):
             assert (
                 active in valid_activations
@@ -59,6 +64,7 @@ class FFNN:
             ), f"Invalid activations: {active}."
 
         self.loss = self.__getLossFunction(loss)
+        self.regularize = self.__getRegularizationFunction(regularization)
         self.seed = seed
         self.weight_mode = weight
         self.layers = layers
@@ -80,10 +86,20 @@ class FFNN:
             "cce": LossFunction.cce,
         }
         return loss_functions.get(loss, None)
+    
+    def __getRegularizationFunction(self, regularization: str) -> callable:
+        """Returns the loss function."""
+        regularization_functions = {
+            "l1": RegularizationFunctions.l1,
+            "l2": RegularizationFunctions.l2,
+            "none": RegularizationFunctions.none,
+        }
+        return regularization_functions.get(regularization, None)
 
     def forward(self, batch_X: np.ndarray, batch_y: np.ndarray) -> Value:
         """Forward Pass of the neural network using loss function."""
-        return self.loss(Matrix(batch_y), self.NN(Matrix(batch_X)))
+        params = [v.data for v in self.parameters()]
+        return self.loss(Matrix(batch_y), self.NN(Matrix(batch_X))) + self.regularize(params).data
 
     def backpropagation(self, forward_loss: Value):
         """Backward Pass of the Neural Network using loss Value."""

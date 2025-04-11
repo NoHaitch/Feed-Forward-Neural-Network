@@ -91,6 +91,29 @@ class Value:
         
         out._backward = _backward
         return out
+    
+    def abs(self):
+        """
+        Absolute value operation |x|
+        
+        The derivative of |x| is:
+        - 1 when x > 0
+        - -1 when x < 0
+        - undefined at x = 0 (we'll use 0 as an approximation)
+        """
+        out = Value(abs(self.data), (self,), 'abs')
+        
+        def _backward():
+            # For x=0, gradient is technically undefined
+            # Using 0 as a practical approximation
+            if self.data > 0:
+                self.grad += 1 * out.grad
+            elif self.data < 0:
+                self.grad += -1 * out.grad
+            # When self.data == 0, we leave the gradient as 0
+        
+        out._backward = _backward
+        return out
 
 
     ### ===== Other operations ===== ###
@@ -139,4 +162,3 @@ class Value:
         # backpropagate the gradient through the graph using chain rule
         for v in reversed(topo):
             v._backward()
-            
